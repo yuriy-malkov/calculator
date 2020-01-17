@@ -20,7 +20,7 @@ class CalculatorSpec
     "add term to initial value" in {
       val initialValue = 2
       val term = 1
-      val expectedTotal = 3
+      val expectedValue = 3
 
       // create test probe (test actor) that expects a Total
       val probe = testKit.createTestProbe[CalculatorSpec.Total]()
@@ -32,7 +32,22 @@ class CalculatorSpec
       // send message to retrieve value
       calculator ! CalculatorSpec.Result(probe.ref)
       // see total
-      probe.expectMessage(CalculatorSpec.Total(expectedTotal))
+      probe.expectMessage(CalculatorSpec.Total(expectedValue))
+    }
+
+    "subtract term from current value" in {
+      val currentValue = 5
+      val term = 3
+      val expectedValue = 2
+
+      // create test probe (test actor) that expects a Total
+      val probe = testKit.createTestProbe[CalculatorSpec.Total]()
+      val calculator = testKit.spawn(CalculatorSpec(currentValue), "calculator")
+      calculator ! CalculatorSpec.Subtract(term)
+
+      calculator ! CalculatorSpec.Result(probe.ref)
+
+      probe.expectMessage(CalculatorSpec.Total(expectedValue))
     }
   }
 }
@@ -41,6 +56,7 @@ object CalculatorSpec {
 
   sealed trait Command
   final case class Add(term: Int) extends Command
+  final case class Subtract(term: Int) extends Command
   final case class Result(replyTo: ActorRef[Total]) extends Command
   final case class Total(n: Int)
 
