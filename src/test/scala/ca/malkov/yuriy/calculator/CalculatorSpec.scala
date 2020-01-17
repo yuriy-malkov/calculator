@@ -48,6 +48,7 @@ class CalculatorSpec
       calculator ! CalculatorSpec.Result(probe.ref)
 
       probe.expectMessage(CalculatorSpec.Total(expectedValue))
+
     }
   }
 }
