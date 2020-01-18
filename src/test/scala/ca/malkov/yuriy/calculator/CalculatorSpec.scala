@@ -17,22 +17,25 @@ class CalculatorSpec
   override def afterAll(): Unit = testKit.shutdownTestKit()
 
   "Calculator" must {
+    val initialValue = 0
+    // create test probe (test actor) that expects a Total
+    val probe = testKit.createTestProbe[CalculatorSpec.Total]()
+    // Spawn calculator actor with initial value
+    val calculator = testKit.spawn(CalculatorSpec(initialValue), "calculator")
     "add term to initial value" in {
-      val initialValue = 2
       val term = 1
-      val expectedTotal = 3
-
-      // create test probe (test actor) that expects a Total
-      val probe = testKit.createTestProbe[CalculatorSpec.Total]()
-
-      // Spawn calculator actor with initial value
-      val calculator = testKit.spawn(CalculatorSpec(initialValue), "calculator")
-      // send message to add term
+      val expectedValue = 1
       calculator ! CalculatorSpec.Add(term)
-      // send message to retrieve value
       calculator ! CalculatorSpec.Result(probe.ref)
-      // see total
-      probe.expectMessage(CalculatorSpec.Total(expectedTotal))
+      probe.expectMessage(CalculatorSpec.Total(expectedValue))
+    }
+
+    "subtract term from current value" in {
+      val term = 3
+      val expectedValue = -2
+      calculator ! CalculatorSpec.Subtract(term)
+      calculator ! CalculatorSpec.Result(probe.ref)
+      probe.expectMessage(CalculatorSpec.Total(expectedValue))
     }
   }
 }
@@ -41,6 +44,7 @@ object CalculatorSpec {
 
   sealed trait Command
   final case class Add(term: Int) extends Command
+  final case class Subtract(term: Int) extends Command
   final case class Result(replyTo: ActorRef[Total]) extends Command
   final case class Total(n: Int)
 
@@ -51,8 +55,9 @@ object CalculatorSpec {
     Behaviors.receive((context, message) => {
       message match {
         case Add(term) =>
-          val newTotal = total + term
-          calculator(newTotal)
+          calculator(total + term)
+        case Subtract(term) =>
+          calculator(total - term)
         case Result(replyTo) =>
           replyTo ! Total(total)
           Behaviors.same
