@@ -37,6 +37,13 @@ class CalculatorSpec
       calculator ! CalculatorSpec.Result(probe.ref)
       probe.expectMessage(CalculatorSpec.Total(expectedValue))
     }
+
+    "reset value to 0" in {
+      calculator ! CalculatorSpec.Add(10)
+      calculator ! CalculatorSpec.Reset()
+      calculator ! CalculatorSpec.Result(probe.ref)
+      probe.expectMessage(CalculatorSpec.Total(0))
+    }
   }
 }
 
@@ -45,6 +52,7 @@ object CalculatorSpec {
   sealed trait Command
   final case class Add(term: Int) extends Command
   final case class Subtract(term: Int) extends Command
+  final case class Reset() extends Command
   final case class Result(replyTo: ActorRef[Total]) extends Command
   final case class Total(n: Int)
 
@@ -58,6 +66,8 @@ object CalculatorSpec {
           calculator(total + term)
         case Subtract(term) =>
           calculator(total - term)
+        case Reset() =>
+          calculator(0)
         case Result(replyTo) =>
           replyTo ! Total(total)
           Behaviors.same
